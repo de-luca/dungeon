@@ -1,0 +1,16 @@
+$lgt-text: 54, 54, 54;
+$lgt-background: 255, 255, 255;
+$lgt-primary: 245, 245, 245;
+$lgt-secondary: 238, 238, 238;
+$lgt-tertiary: 232, 232, 232;
+
+@mixin lgt {
+  --raw-text: #{$lgt-text};
+  --raw-primary: #{$lgt-primary};
+
+  --text: rgb(#{$lgt-text});
+  --background: rgb(#{$lgt-background});
+  --primary: rgb(#{$lgt-primary});
+  --secondary: rgb(#{$lgt-secondary});
+  --tertiary: rgb(#{$lgt-tertiary});
+}

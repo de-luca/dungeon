@@ -1,0 +1,16 @@
+$drk-text: 245, 245, 245;
+$drk-background: 17, 17, 17;
+$drk-primary: 54, 54, 54;
+$drk-secondary: 47, 47, 47;
+$drk-tertiary: 41, 41, 41;
+
+@mixin drk {
+  --raw-text: #{$drk-text};
+  --raw-primary: #{$drk-primary};
+
+  --text: rgb(#{$drk-text});
+  --background: rgb(#{$drk-background});
+  --primary: rgb(#{$drk-primary});
+  --secondary: rgb(#{$drk-secondary});
+  --tertiary: rgb(#{$drk-tertiary});
+}

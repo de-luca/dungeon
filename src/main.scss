@@ -1,0 +1,81 @@
+@import "./scss/drk";
+@import "./scss/lgt";
+@import "./scss/dungeon";
+@import 'bulma/css/bulma.css';
+
+html {
+  @media (prefers-color-scheme: dark) { @include drk }
+  @media (prefers-color-scheme: light) { @include lgt }
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  height: 100%;
+
+  color: var(--text);
+  background-color: var(--background);
+
+  .input,
+  .select select {
+    color: var(--text);
+    background-color: transparent;
+    border-color: var(--primary);
+  }
+
+  .input {
+    &:hover {
+      border-color: var(--tertiary);
+    }
+
+    &::placeholder {
+      color: rgba(var(--raw-text), .3);
+    }
+  }
+
+  .select {
+    &:not(.is-multiple):not(.is-loading)::after {
+      border-color: var(--tertiary);
+    }
+  }
+
+  button,
+  a,
+  span,
+  div {
+    &.button,
+    &.tag {
+      color: var(--text);
+      background-color: var(--primary);
+      border-color: transparent;
+
+      &:hover {
+        background-color: var(--secondary);
+      }
+
+      &:active {
+        background-color: var(--tertiary);
+      }
+
+      &:focus {
+        background-color: var(--primary);
+      }
+
+      &[disabled] {
+        background-color: var(--primary);
+      }
+
+      &.is-loading::after {
+        border-color: transparent transparent var(--primary) var(--primary) !important;
+      }
+    }
+  }
+}
