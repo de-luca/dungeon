@@ -1,6 +1,5 @@
 import { ActionSender, joinRoom, Room, selfId } from 'trystero';
 import { StateDump } from '../types';
-
 import type { useMain } from '../store/main';
 
 type Fun<TA extends any[] = any[], TR = any> = (...args: TA) => TR;
@@ -38,28 +37,17 @@ export class Game implements GameInterface {
     private store: Store;
     private room: Room;
 
-    private syncSender!: ActionSender<StateDump>;
+    public readonly sync: ActionSender<StateDump>;
     
     public constructor(store: Store, gameId?: string) {
         this.gameId = gameId ?? Game.genId();
         this.store = store;
         this.room = joinRoom({ appId: Game.appId }, this.gameId);
 
-        this.register();
-    }
-
-    private static genId(): string {
-        return new Array(this.gameIdLength)
-            .fill('')
-            .map(() => this.gameIdCharSet[Math.floor(Math.random() * this.gameIdCharSet.length)])
-            .join('');
-    }
-
-    private register(): void {
         const [initSender, initReceiver] = this.room.makeAction<StateDump>(EventType.INIT);
         const [syncSender, syncReceiver] = this.room.makeAction<StateDump>(EventType.SYNC);
-        
-        this.syncSender = syncSender;
+
+        this.sync = syncSender;
 
         this.room.onPeerJoin((peerId) => initSender(this.store.dump, [peerId]));
         this.room.onPeerLeave((peerId) => {
@@ -76,8 +64,11 @@ export class Game implements GameInterface {
         }));
     }
 
-    public sync(state: StateDump): void {
-        this.syncSender(state);
+    private static genId(): string {
+        return new Array(this.gameIdLength)
+            .fill('')
+            .map(() => this.gameIdCharSet[Math.floor(Math.random() * this.gameIdCharSet.length)])
+            .join('');
     }
 
     public leave(): void {
