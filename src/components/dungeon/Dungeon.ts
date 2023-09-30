@@ -1,5 +1,4 @@
 import { Vue } from "vue-facing-decorator";
-import { Game } from "../../net/Game";
 import { useMain } from "../../store/main";
 import { Dungeon as DungeonName, DungeonRoom, Player } from "../../types";
 
@@ -38,8 +37,8 @@ export abstract class Dungeon<T extends DungeonName> extends Vue {
     }
 
     public setRoom(room: DungeonRoom[T]): void {
-        (this.byRoom.get(room) ?? []).includes(Game.selfId)
-            ? this._state.removeMarker(Game.selfId)
+        (this.byRoom.get(room) ?? []).includes(this._state.selfId)
+            ? this._state.removeMarker(this._state.selfId)
             : this._state.putMarkerOnRoom(this.dungeon, room);
     }
 

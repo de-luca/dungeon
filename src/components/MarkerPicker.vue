@@ -61,7 +61,7 @@ unicode-emoji-picker {
 
     position: absolute;
     top: 3rem;
-    right: 0;
+    right: 1rem;
     z-index: 5;
     display: none;
     &.shown {

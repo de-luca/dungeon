@@ -16,23 +16,34 @@
             <button class="button" title="Open your game and share it with others" @click="create">Invite</button>
         </p>
     </div>
+
+    <ErrorModal v-if="error !== null" :error="error" @close="error = null"></ErrorModal>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-facing-decorator';
 import { useMain } from '../store/main';
 
-@Component
+import ErrorModal from '../components/ErrorModal.vue';
+
+@Component({
+    components: { ErrorModal },
+})
 export default class Invite extends Vue {
     public state = useMain();
+    public error: any = null;
 
     public get inviteUrl(): string {
         return `${window.location.origin}/#/${this.state.gameId}`;
     }
 
-    public create(): void {
-        this.state.createGame();
-        history.replaceState({}, '', `#/${this.state.gameId}`);
+    public async create(): Promise<void> {
+        try {
+            await this.state.createGame();
+            history.replaceState({}, '', `#/${this.state.gameId}`);
+        } catch (err) {
+            this.error = err;
+        }
     }
 
     public leave(): void {
@@ -49,6 +60,3 @@ export default class Invite extends Vue {
     }
 }
 </script>
-
-<style lang="scss" scoped>
-</style>

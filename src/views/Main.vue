@@ -33,9 +33,12 @@
             </div>
         </template>
     </div>
+
+    <ErrorModal v-if="error !== null" :error="error" @close="error = null"></ErrorModal>
 </template>
 
 <script lang="ts">
+import { markRaw } from 'vue';
 import { Component, Vue } from 'vue-facing-decorator';
 import { useMain } from '../store/main';
 import { Dungeon } from '../types';
@@ -43,21 +46,16 @@ import { Dungeon } from '../types';
 import MarkerPicker from '../components/MarkerPicker.vue';
 import Invite from '../components/Invite.vue';
 import Help from '../components/Help.vue';
+import ErrorModal from '../components/ErrorModal.vue';
 
-import DungeonOfTheMadMage from '../components/dungeon/DungeonOfTheMadMage.vue';
-import LostMineOfPhandelver from '../components/dungeon/LostMineOfPhandelver.vue';
-import TombOfAnnihilation from '../components/dungeon/TombOfAnnihilation.vue';
-import Undercity from '../components/dungeon/Undercity.vue';
+import * as Dungeons from '../components/dungeon';
 
 @Component({
     components: { 
         MarkerPicker,
         Invite,
         Help,
-        DungeonOfTheMadMage,
-        LostMineOfPhandelver,
-        TombOfAnnihilation,
-        Undercity,
+        ErrorModal,
     },
 })
 export default class Main extends Vue {
@@ -65,27 +63,42 @@ export default class Main extends Vue {
     public dungeons = {
         [Dungeon.DungeonOfTheMadMage]: {
             name: 'Dungeon of the Mad Mage',
-            is: DungeonOfTheMadMage,
+            is: markRaw(Dungeons.DungeonOfTheMadMage),
         },
         [Dungeon.LostMineOfPhandelver]: {
             name: 'Lost Mine of Phandelver',
-            is: LostMineOfPhandelver,
+            is: markRaw(Dungeons.LostMineOfPhandelver),
         },
         [Dungeon.TombOfAnnihilation]: {
             name: 'Tomb of Annihilation',
-            is: TombOfAnnihilation,
+            is: markRaw(Dungeons.TombOfAnnihilation),
         },
         [Dungeon.Undercity]: {
             name: 'Undercity',
-            is: Undercity,
+            is: markRaw(Dungeons.Undercity),
         },
     };
 
+    public error: any = null;
     public toEnable: Dungeon | null = null;
 
-    public created(): void {
-        if ('gameId' in this.$route.params && this.$route.params.gameId !== '') {
-            this.state.joinGame(this.$route.params.gameId as string);
+    public async created(): Promise<void> {
+        window.addEventListener('beforeunload', (ev: BeforeUnloadEvent) => {
+            if (this.state.dungeons.size > 0 || this.state.gameId && this.state.players.size === 1) {
+                ev.returnValue = 'You will lose your current dungeon tracking.';
+                ev.preventDefault()
+                return false;
+            }
+        });
+
+        if (!('gameId' in this.$route.params) || this.$route.params.gameId === '') {
+            return;
+        }
+
+        try {
+            await this.state.joinGame(this.$route.params.gameId as string);
+        } catch (err) {
+            this.error = err;
         }
     }
 

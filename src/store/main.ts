@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { GameInterface, Game } from '../net/Game';
+import { NetInterface, Net } from '../Net';
 import { 
   Dungeon, 
   DungeonRoom, 
@@ -14,7 +14,7 @@ export interface DungeonState<T extends Dungeon> {
 }
 
 export interface State {
-  game?: GameInterface;
+  net?: NetInterface;
   marker: Marker;
   players: Map<Player, Marker>;
   dungeons: Map<Dungeon, DungeonState<Dungeon>>;
@@ -27,6 +27,17 @@ const EMOJIS = [
   '🏝', '🦠', '🪅', '🏳️‍🌈', '🏳️‍⚧️',
 ];
 
+type Fun<TA extends any[] = any[], TR = any> = (...args: TA) => TR;
+function once<T extends Fun>(fun: T): T {
+  let invs = 0;
+  return ((...args: Parameters<T>) => {
+    if (invs < 1) {
+      invs++;
+      return fun(...args);
+    }
+  }) as T;
+}
+
 function restoreMarker(): string {
   return localStorage.getItem('marker') 
     ?? EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
@@ -35,9 +46,9 @@ function restoreMarker(): string {
 function getState(): State {
   const marker = restoreMarker();
   return {
-    game: undefined,
+    net: undefined,
     marker,
-    players: new Map([[Game.selfId, marker]]),
+    players: new Map([['', marker]]),
     dungeons: new Map(),
   };
 }
@@ -55,7 +66,8 @@ export const useMain = defineStore('main', {
   state: getState,
 
   getters: {
-    gameId: (state: State) => state.game?.gameId,
+    gameId: (state: State) => state.net?.gameId,
+    selfId: (state: State) => state.net?.selfId ?? '',
     available: (state: State): Array<Dungeon> => {
       const ids = [...state.dungeons.keys()];
       return DUNGEON_IDS.filter(id => !ids.includes(id as Dungeon)) as Array<Dungeon>;
@@ -74,7 +86,7 @@ export const useMain = defineStore('main', {
 
   actions: {
     sync(): void {
-      this.game?.sync(this.dump);
+      this.net?.sync(this.dump);
     },
     restore(dump: StateDump): void {
       this.players = new Map(dump.players);
@@ -91,7 +103,7 @@ export const useMain = defineStore('main', {
 
     setMarker(marker: string): void {
       this.marker = marker;
-      this.players.set(Game.selfId, marker);
+      this.players.set(this.selfId, marker);
       localStorage.setItem('marker', this.marker);
       this.sync();
     },
@@ -112,19 +124,48 @@ export const useMain = defineStore('main', {
     },
 
     putMarkerOnRoom<T extends Dungeon>(dungeon: T, room: DungeonRoom[T]): void {
-      this.removeMarker(Game.selfId);
-      this.dungeons.get(dungeon)!.markers.set(Game.selfId, room);
+      this.removeMarker(this.selfId);
+      this.dungeons.get(dungeon)!.markers.set(this.selfId, room);
       this.sync();
     },
 
-    createGame(): void {
-      this.game = new Game(this);
+    async createGame() {
+      this.net = new Net(this);
+      try {
+        await this.net.connected;
+        await this.net.create();
+      } catch (err) {
+        this.net.leave();
+        this.net = undefined;
+        throw err;
+      }
+      this.players.set(this.selfId, this.marker);
+      this.players.delete('');
+      for (const d of this.dungeons.values()) {
+        const room = d.markers.get('');
+        if (room) {
+          d.markers.set(this.selfId, room);
+          d.markers.delete('');
+        }
+      }
     },
-    joinGame(gameId: string): void {
-      this.game = new Game(this, gameId);
+    async joinGame(gameId: string): Promise<void> {
+      this.net = new Net(this, gameId);
+      try {
+        await this.net.connected;
+        await this.net.join(once((dump) => {
+          this.restore(dump);
+          this.players.set(this.selfId, this.marker);
+          this.sync();
+        }));
+      } catch (err) {
+        this.net.leave();
+        this.net = undefined;
+        throw err;
+      }
     },
     leaveGame(): void {
-      this.game?.leave();
+      this.net?.leave();
       this.$reset();
     },
   },
